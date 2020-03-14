@@ -6,6 +6,7 @@
 //                 Roni Karilkar <https://github.com/ronikar>
 //                 Sandra Frischmuth <https://github.com/sanfrisc>
 //                 Vladimir Dashukevich <https://github.com/life777>
+//                 Henry Thasler <https://github.com/henrythasler>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 // TypeScript Version: 2.3
 
@@ -117,6 +118,7 @@ export class LatLng {
     distanceTo(otherLatLng: LatLngExpression): number;
     wrap(): LatLng;
     toBounds(sizeInMeters: number): LatLngBounds;
+    clone(): LatLng;
 
     lat: number;
     lng: number;
@@ -804,6 +806,7 @@ export interface TileLayerOptions extends GridLayerOptions {
 export class TileLayer extends GridLayer {
     constructor(urlTemplate: string, options?: TileLayerOptions);
     setUrl(url: string, noRedraw?: boolean): this;
+    getTileUrl(coords: L.Coords): string;
 
     protected _abortLoading(): void;
     protected _getZoomForUrl(): number;
@@ -986,7 +989,7 @@ export class Polyline<T extends geojson.GeometryObject = geojson.LineString | ge
     isEmpty(): boolean;
     getCenter(): LatLng;
     getBounds(): LatLngBounds;
-    addLatLng(latlng: LatLngExpression | LatLngExpression[]): this;
+    addLatLng(latlng: LatLngExpression | LatLngExpression[], latlngs?: LatLng[]): this;
     closestLayerPoint(p: Point): Point;
 
     feature?: geojson.Feature<T, P>;
@@ -1657,6 +1660,8 @@ export interface ZoomAnimEvent extends LeafletEvent {
 export namespace DomEvent {
     type EventHandlerFn = (event: Event) => void;
 
+    type PropagableEvent = LeafletMouseEvent | LeafletKeyboardEvent | LeafletEvent | Event;
+
     function on(el: HTMLElement, types: string, fn: EventHandlerFn, context?: any): typeof DomEvent;
 
     function on(el: HTMLElement, eventMap: {[eventName: string]: EventHandlerFn}, context?: any): typeof DomEvent;
@@ -1665,7 +1670,7 @@ export namespace DomEvent {
 
     function off(el: HTMLElement, eventMap: {[eventName: string]: EventHandlerFn}, context?: any): typeof DomEvent;
 
-    function stopPropagation(ev: Event): typeof DomEvent;
+    function stopPropagation(ev: PropagableEvent): typeof DomEvent;
 
     function disableScrollPropagation(el: HTMLElement): typeof DomEvent;
 
@@ -1673,7 +1678,7 @@ export namespace DomEvent {
 
     function preventDefault(ev: Event): typeof DomEvent;
 
-    function stop(ev: Event): typeof DomEvent;
+    function stop(ev: PropagableEvent): typeof DomEvent;
 
     function getMousePosition(ev: MouseEvent, container?: HTMLElement): Point;
 
@@ -1786,6 +1791,7 @@ export class Map extends Evented {
     stopLocate(): this;
 
     // Properties
+    attributionControl: L.Control.Attribution;
     boxZoom: Handler;
     doubleClickZoom: Handler;
     dragging: Handler;
@@ -1900,6 +1906,8 @@ export class Marker<P = any> extends Layer {
     options: MarkerOptions;
     dragging?: Handler;
     feature?: geojson.Feature<geojson.Point, P>;
+
+    protected _shadow: HTMLElement | undefined;
 }
 
 export function marker(latlng: LatLngExpression, options?: MarkerOptions): Marker;

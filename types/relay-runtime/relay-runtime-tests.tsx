@@ -1,20 +1,34 @@
 import {
     ConcreteRequest,
-    Environment,
-    Network,
-    RecordSource,
-    Store,
     ConnectionHandler,
-    commitLocalUpdate,
+    Environment,
+    getDefaultMissingFieldHandlers,
+    Network,
     QueryResponseCache,
     ROOT_ID,
-    RelayNetworkLoggerTransaction,
-    createRelayNetworkLogger,
-    RecordSourceSelectorProxy, RecordProxy,
+    ROOT_TYPE,
+    RecordProxy,
+    RecordSource,
+    RecordSourceSelectorProxy,
+    Store,
+    commitLocalUpdate,
 } from 'relay-runtime';
 
 const source = new RecordSource();
 const store = new Store(source);
+const storeWithNullOptions = new Store(source, {
+    gcScheduler: null,
+    operationLoader: null,
+    gcReleaseBufferSize: null,
+});
+const storeWithOptions = new Store(source, {
+    gcScheduler: () => undefined,
+    operationLoader: {
+        get: () => null,
+        load: () => Promise.resolve(null),
+    },
+    gcReleaseBufferSize: 10,
+});
 
 // ~~~~~~~~~~~~~~~~~~~~~
 // Network Layer
@@ -33,10 +47,8 @@ function fetchQuery(operation: any, variables: { [key: string]: string }, cacheC
     });
 }
 
-const RelayNetworkLogger = createRelayNetworkLogger(RelayNetworkLoggerTransaction);
-
 // Create a network layer from the fetch function
-const network = Network.create(RelayNetworkLogger.wrapFetch(fetchQuery));
+const network = Network.create(fetchQuery);
 
 // Create a cache for storing query responses
 const cache = new QueryResponseCache({ size: 250, ttl: 60000 });
@@ -48,6 +60,49 @@ const environment = new Environment({
     handlerProvider, // Can omit.
     network,
     store,
+    missingFieldHandlers: [
+        ...getDefaultMissingFieldHandlers(),
+        // Example from https://relay.dev/docs/en/experimental/a-guided-tour-of-relay
+        {
+            handle(field, record, argValues) {
+                if (
+                    record != null &&
+                    record.__typename === ROOT_TYPE &&
+                    field.name === 'user' &&
+                    argValues.hasOwnProperty('id')
+                ) {
+                    // If field is user(id: $id), look up the record by the value of $id
+                    return argValues.id;
+                }
+                if (
+                    record != null &&
+                    record.__typename === ROOT_TYPE &&
+                    field.name === 'story' &&
+                    argValues.hasOwnProperty('story_id')
+                ) {
+                    // If field is story(story_id: $story_id), look up the record by the
+                    // value of $story_id.
+                    return argValues.story_id;
+                }
+
+                return null;
+            },
+            kind: 'linked',
+        },
+    ],
+    log: (logEvent) => {
+        switch (logEvent.name) {
+            case 'execute.start':
+            case 'execute.next':
+            case 'execute.error':
+            case 'execute.info':
+            case 'execute.complete':
+            case 'execute.unsubscribe':
+            case 'queryresource.fetch':
+            default:
+                break;
+        }
+    }
 });
 
 // ~~~~~~~~~~~~~~~~~~~~~
@@ -83,8 +138,8 @@ interface MessageEdge {
 interface SendConversationMessageMutationResponse {
     readonly sendConversationMessage: {
         readonly messageEdge: MessageEdge & {
-            error: string
-        }
+            error: string;
+        };
     };
 }
 

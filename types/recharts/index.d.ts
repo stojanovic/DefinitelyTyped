@@ -17,6 +17,8 @@
 //                 Gonzalo Nicolas D'Elia <https://github.com/gndelia>
 //                 Dimitri Mitropoulos <https://github.com/dimitropoulos>
 //                 Eliot Ball <https://github.com/eliotball>
+//                 Ville Kentta <https://github.com/vkentta>
+//                 Fabien Caylus <https://github.com/fcaylus>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 // TypeScript Version: 2.8
 
@@ -54,6 +56,7 @@ export type LineType =
 export type IfOverflowType = 'hidden' | 'visible' | 'discard' | 'extendDomain';
 export type AxisInterval = number | 'preserveStart' | 'preserveEnd' | 'preserveStartEnd';
 export type BaseValueType = number | 'auto' | 'dataMin' | 'dataMax';
+export type ReferenceLinePosition = 'start' | 'middle' | 'end';
 
 export type PickedCSSStyleDeclarationKeys =
     'alignmentBaseline' | 'baselineShift' | 'clip' | 'clipPath' | 'clipRule' | 'color' |
@@ -324,6 +327,8 @@ export class CartesianGrid extends React.Component<CartesianGridProps> { }
 
 export interface CellProps extends Partial<PresentationAttributes> {
     onClick?: RechartsFunction;
+    onMouseEnter?: RechartsFunction;
+    onMouseLeave?: RechartsFunction;
 }
 
 export class Cell extends React.Component<CellProps> { }
@@ -711,10 +716,15 @@ export interface ReferenceDotProps extends EventAttributes, Partial<Presentation
         & Partial<PresentationAttributes<number | string, number | string>>
         & { cx: number; cy: number; }
     > | React.ReactElement;
-    label: string | number | React.ReactElement | RechartsFunction;
+    label?: string | number | React.ReactElement | RechartsFunction;
 }
 
 export class ReferenceDot extends React.Component<ReferenceDotProps> { }
+
+export interface SegmentItem {
+    x: number | string;
+    y: number | string;
+}
 
 export interface ReferenceLineProps extends Partial<PresentationAttributes<number | string, number | string>> {
     className?: number | string;
@@ -726,6 +736,7 @@ export interface ReferenceLineProps extends Partial<PresentationAttributes<numbe
     ifOverflow?: IfOverflowType;
     x?: number | string;
     y?: number | string;
+    segment?: Readonly<[SegmentItem, SegmentItem]>;
     label?: string | number | ContentRenderer<any> | React.ReactElement;
     xAxisId?: string | number;
     yAxisId?: string | number;
@@ -734,6 +745,7 @@ export interface ReferenceLineProps extends Partial<PresentationAttributes<numbe
         & Partial<PresentationAttributes<number | string, number | string>>
         & { x1: number; y1: number; x2: number; y2: number; }
     > | React.ReactElement;
+    position?: ReferenceLinePosition;
 }
 
 export class ReferenceLine extends React.Component<ReferenceLineProps> { }
@@ -805,6 +817,7 @@ export interface SectorProps extends EventAttributes, Partial<PresentationAttrib
 export class Sector extends React.Component<SectorProps> { }
 
 export interface TextProps extends Partial<PresentationAttributes> {
+    className?: string;
     scaleToFit?: boolean;
     angle?: number;
     textAnchor?: 'start' | 'middle' | 'end' | 'inherit';
@@ -908,20 +921,18 @@ export interface LabelProps extends Partial<PresentationAttributes> {
 
 export class LabelList extends React.Component<LabelListProps> { }
 
-export interface LabelListProps {
+export type LabelListProps = {
     angle?: number;
     children?: React.ReactNode[] | React.ReactNode;
     className?: string;
     clockWise?: boolean;
     content?: React.ReactElement | ContentRenderer<LabelProps>;
     data?: number;
-    dataKey: string | number | RechartsFunction;
     formatter?: LabelFormatter;
     id?: string;
     offset?: number;
     position?: PositionType;
-    valueAccessor?: RechartsFunction;
-}
+} & ({ dataKey: string | number | RechartsFunction, valueAccessor?: never } | { valueAccessor: RechartsFunction, dataKey?: never });
 
 export type AxisDomain = string | number | ContentRenderer<any> | 'auto' | 'dataMin' | 'dataMax';
 
@@ -1084,3 +1095,9 @@ export interface SymbolsProps extends Partial<PresentationAttributes> {
 }
 
 export class Symbols extends React.Component<SymbolsProps> { }
+
+export interface CustomizedProps {
+    component: ContentRenderer<any> | React.ReactElement;
+}
+
+export class Customized extends React.Component<CustomizedProps> { }

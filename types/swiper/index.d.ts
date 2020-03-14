@@ -1,4 +1,4 @@
-// Type definitions for Swiper 4.4
+// Type definitions for Swiper 5.2
 // Project: https://github.com/nolimits4web/Swiper, http://www.idangero.us/swiper
 // Definitions by: Sebastián Galiano <https://github.com/sgaliano>
 //                 Luca Trazzi <https://github.com/lucax88x>
@@ -439,6 +439,7 @@ export interface SwiperOptions {
     wrapperClass?: string;
 
     // Components
+    controller?: ControllerOptions | boolean;
     navigation?: NavigationOptions;
     pagination?: PaginationOptions;
     scrollbar?: ScrollbarOptions;
